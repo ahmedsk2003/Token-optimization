@@ -40,6 +40,12 @@ from src.analyzer.sentence_segmenter import (
     RegexSentenceSegmenter,
     get_sentence_segmenter,
 )
+from src.analyzer.task_classifier import (
+    SUPPORTED_TASK_TYPES,
+    BaseTaskClassifier,
+    RuleBasedTaskClassifier,
+    get_task_classifier,
+)
 
 __all__ = [
     "PromptAnalyzer",
@@ -65,4 +71,8 @@ __all__ = [
     "SentenceTransformerSemanticScorer",
     "get_semantic_scorer",
     "DEFAULT_REDUNDANCY_THRESHOLD",
+    "BaseTaskClassifier",
+    "RuleBasedTaskClassifier",
+    "get_task_classifier",
+    "SUPPORTED_TASK_TYPES",
 ]

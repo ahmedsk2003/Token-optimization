@@ -7,19 +7,23 @@ import numpy as np
 
 from src.analyzer import (
     DEFAULT_REDUNDANCY_THRESHOLD,
+    SUPPORTED_TASK_TYPES,
     BaseConstraintDetector,
     BaseExampleDetector,
     BaseInstructionDetector,
     BaseOutputFormatDetector,
     BaseSemanticScorer,
     BaseSentenceSegmenter,
+    BaseTaskClassifier,
     DetectedConstraint,
     PromptAnalysisResult,
     PromptAnalyzer,
+    RuleBasedTaskClassifier,
     SentenceTransformerSemanticScorer,
     analyze_prompt,
     get_semantic_scorer,
     get_sentence_segmenter,
+    get_task_classifier,
 )
 from src.evaluation.baseline import measure_prompt
 from src.utils.tokenizer import BaseTokenizer, get_tokenizer
@@ -162,6 +166,7 @@ class TestPromptAnalyzer(unittest.TestCase):
                 "has_output_format": False,
                 "semantic_similarity": 0.0,
                 "redundancy_score": 0.0,
+                "task_type": "other",
             },
         )
 
@@ -242,6 +247,7 @@ class TestPromptAnalyzer(unittest.TestCase):
                 "has_output_format",
                 "semantic_similarity",
                 "redundancy_score",
+                "task_type",
             },
         )
 
@@ -405,6 +411,7 @@ class TestPromptAnalyzer(unittest.TestCase):
         self.assertFalse(structured.has_output_format)
         self.assertEqual(structured.semantic_similarity, 0.0)
         self.assertEqual(structured.redundancy_score, 0.0)
+        self.assertEqual(structured.task_type, "explanation")
         self.assertEqual(structured.to_dict(), self.analyzer.analyze(prompt))
 
     # ------------------ Example Requirement Detection Tests ------------------
@@ -758,5 +765,247 @@ class TestSemanticScorerRealModel(unittest.TestCase):
         self.assertEqual(red, 0.0)
 
 
+class DummyTaskClassifier(BaseTaskClassifier):
+    """Custom classifier test double to verify task classifier replaceability."""
+
+    def __init__(self, fixed_task: str = "custom_task"):
+        self.fixed_task = fixed_task
+
+    def classify(self, prompt: str) -> str:
+        return self.fixed_task
+
+
+class TestTaskClassifier(unittest.TestCase):
+    """Comprehensive unit tests for RuleBasedTaskClassifier across all categories."""
+
+    def setUp(self):
+        self.classifier = RuleBasedTaskClassifier()
+        self.analyzer = PromptAnalyzer()
+
+    # 1. Explanation
+    def test_task_explanation(self):
+        prompts = [
+            "Explain quantum computing in simple terms.",
+            "How does the immune system protect the human body against viral infections?",
+            "Please elaborate on the principles of object-oriented programming.",
+            "Describe how photosynthesis works in green plants.",
+            "Walk me through the process of DNA replication.",
+            "Help me understand why the sky is blue during the day.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "explanation")
+
+    # 2. Summarization
+    def test_task_summarization(self):
+        prompts = [
+            "Summarize the key points of the quarterly earnings report.",
+            "Provide a brief summary of the attached research paper.",
+            "TL;DR of this article please: The economic forecast shows continued growth...",
+            "Condense the following text into two concise sentences.",
+            "Give me the key takeaways of the meeting notes.",
+            "Briefly summarize what happened in chapter 4.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "summarization")
+
+    # 3. Comparison
+    def test_task_comparison(self):
+        prompts = [
+            "Compare React and Vue for building single-page applications.",
+            "What is the difference between TCP and UDP?",
+            "Compare and contrast supervised and unsupervised machine learning.",
+            "PostgreSQL vs MongoDB: which database is better for analytics?",
+            "Distinguish between synchronous and asynchronous programming.",
+            "What are the pros and cons of microservices versus monoliths?",
+            "Which is faster: C++ or Python?",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "comparison")
+
+    # 4. Translation
+    def test_task_translation(self):
+        prompts = [
+            "Translate the following user guide into Spanish: 'Click save to continue.'",
+            "Provide the French translation of this welcome message.",
+            "How do you say 'Where is the train station?' in German?",
+            "Translate this paragraph from English to Japanese.",
+            "Translate into Italian: Hello, nice to meet you.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "translation")
+
+    # 5. Code Generation
+    def test_task_code_generation(self):
+        prompts = [
+            "Write a Python script to download files from an S3 bucket.",
+            "Implement a binary search tree in C++.",
+            "Create a REST API endpoint using FastAPI.",
+            "Translate this Python function into Rust code.",
+            "Generate a regex to validate international phone numbers.",
+            "Write an SQL query to find the top 5 customers by sales volume.",
+            "Code a quicksort algorithm in Java.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "code_generation")
+
+    # 6. Debugging
+    def test_task_debugging(self):
+        prompts = [
+            "Debug this Python snippet and fix the IndexError: list index out of range.",
+            "Why is my JavaScript function returning undefined instead of the object?",
+            "Fix the bug in this SQL query that causes duplicate rows.",
+            "Here is a traceback (most recent call last): RuntimeError: CUDA out of memory. How can I resolve it?",
+            "What is wrong with my code? def add(a, b): return a - b",
+            "Find the syntax error in this function.",
+            "Fix this function so it handles null values properly.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "debugging")
+
+    # 7. Data Analysis
+    def test_task_data_analysis(self):
+        prompts = [
+            "Analyze this customer churn dataset and calculate the mean and standard deviation of monthly charges.",
+            "Perform exploratory data analysis on the following sales figures CSV.",
+            "What trends and patterns can you extract from this survey data table?",
+            "Compute the median and 95th percentile latency from this metrics log.",
+            "Analyze the data in the table below and find correlations between price and sales.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "data_analysis")
+
+    # 8. Question Answering
+    def test_task_question_answering(self):
+        prompts = [
+            "What is the capital of Australia?",
+            "Who was the first person to walk on the Moon?",
+            "When was Python first released?",
+            "Where is Mount Kilimanjaro located?",
+            "How many planets are in the Solar System?",
+            "Based on the text above, who discovered penicillin?",
+            "Can penguins fly?",
+            "Which element has the chemical symbol Au?",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "question_answering")
+
+    # 9. Creative Writing
+    def test_task_creative_writing(self):
+        prompts = [
+            "Write a short sci-fi story about a sentient rover exploring Europa.",
+            "Compose a haiku about cherry blossoms in spring.",
+            "Write a dialogue between Sherlock Holmes and Albert Einstein.",
+            "Tell me a bedtime story about a curious little dragon.",
+            "Write a poem about the ocean and the lonely lighthouse.",
+            "Draft a screenplay scene where two spies meet at a cafe in Vienna.",
+            "Tell me a joke about computer programmers.",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "creative_writing")
+
+    # 10. Other: Empty, Whitespace, Non-matching, Chit-Chat
+    def test_task_other_empty_whitespace_and_non_matching(self):
+        prompts = [
+            "",
+            "   \n\t  ",
+            "Hello there, how are you today?",
+            "OK, sounds good to me.",
+            "12345 67890",
+            "Proofread this email for typos and grammatical errors.",
+            "Format this text in all capital letters.",
+            "Please",
+            "Yes",
+            "No",
+        ]
+        for p in prompts:
+            with self.subTest(prompt=p):
+                self.assertEqual(self.classifier.classify(p), "other")
+
+    # Disambiguation & False Positive Avoidance Tests
+    def test_disambiguation_and_false_positive_avoidance(self):
+        # 1. "Explain difference" -> comparison, not general explanation
+        self.assertEqual(
+            self.classifier.classify("Explain the difference between Docker and virtual machines."),
+            "comparison",
+        )
+        # 2. "What is the difference" -> comparison, not question_answering
+        self.assertEqual(
+            self.classifier.classify("What is the difference between SQL and NoSQL databases?"),
+            "comparison",
+        )
+        # 3. "Explain what a bug is" -> explanation, not debugging
+        self.assertEqual(
+            self.classifier.classify("Explain what a software bug is to a beginner."),
+            "explanation",
+        )
+        # 4. "Write code without bugs" -> code_generation, not debugging
+        self.assertEqual(
+            self.classifier.classify("Write a Python script to sort names, make sure it has no bugs."),
+            "code_generation",
+        )
+        # 5. "Translate code from Python to C++" -> code_generation, not natural language translation
+        self.assertEqual(
+            self.classifier.classify("Translate this Python function into C++."),
+            "code_generation",
+        )
+        # 6. "Write a summary" -> summarization, not creative_writing
+        self.assertEqual(
+            self.classifier.classify("Write a summary of the quarterly financial results."),
+            "summarization",
+        )
+        # 7. "Write a Python script" -> code_generation, not creative_writing
+        self.assertEqual(
+            self.classifier.classify("Write a Python script that calculates primes."),
+            "code_generation",
+        )
+        # 8. "Analyze this poem" -> not data_analysis
+        self.assertNotEqual(
+            self.classifier.classify("Analyze the rhythm and metaphors in this poem."),
+            "data_analysis",
+        )
+
+    # Ambiguous and Conflicting Prompts
+    def test_ambiguous_and_conflicting_prompts(self):
+        # Two conflicting category requests in one prompt -> other
+        ambiguous_1 = "Summarize this article and also write a fantasy story about dragons."
+        self.assertEqual(self.classifier.classify(ambiguous_1), "other")
+
+        ambiguous_2 = "Explain quantum physics or write a poem about it, whichever you prefer."
+        self.assertEqual(self.classifier.classify(ambiguous_2), "other")
+
+    # Pluggability & Replacement
+    def test_modular_task_classifier_replaceability(self):
+        dummy_classifier = DummyTaskClassifier(fixed_task="custom_task")
+        custom_analyzer = PromptAnalyzer(task_classifier=dummy_classifier)
+
+        result = custom_analyzer.analyze("Explain machine learning.")
+        self.assertEqual(result["task_type"], "custom_task")
+
+    # Integration through PromptAnalyzer and analyze_prompt
+    def test_prompt_analyzer_task_type_integration(self):
+        prompt = "Write a Python script to sort a list of numbers."
+        result = self.analyzer.analyze(prompt)
+        self.assertIn("task_type", result)
+        self.assertEqual(result["task_type"], "code_generation")
+
+        # analyze_prompt convenience function
+        conv_result = analyze_prompt("Summarize the meeting notes.")
+        self.assertEqual(conv_result["task_type"], "summarization")
+
+        # Supported types set check
+        self.assertIn("task_type", result)
+        self.assertIn(result["task_type"], SUPPORTED_TASK_TYPES)
+
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -1,7 +1,7 @@
 """Prompt analyzer foundation module.
 
 Extracts measurable structural, instruction, constraint, example requirement,
-output format, and semantic similarity/redundancy features from user prompts:
+output format, semantic similarity/redundancy, and task characteristics features from user prompts:
 - token_count: Number of tokens computed by the tokenizer.
 - word_count: Number of whitespace-delimited words.
 - sentence_count: Number of sentences identified by the sentence segmenter.
@@ -12,6 +12,7 @@ output format, and semantic similarity/redundancy features from user prompts:
 - has_output_format: Boolean indicating whether a specific output format or structure is requested.
 - semantic_similarity: Mean pairwise cosine similarity across all unique sentence pairs.
 - redundancy_score: Proportion of unique sentence pairs exceeding the redundancy threshold.
+- task_type: Categorical primary task characteristic (e.g. explanation, summarization, etc.).
 
 Designed modularly to allow future feature extractors to be integrated seamlessly.
 """
@@ -44,6 +45,10 @@ from src.analyzer.sentence_segmenter import (
     BaseSentenceSegmenter,
     get_sentence_segmenter,
 )
+from src.analyzer.task_classifier import (
+    BaseTaskClassifier,
+    get_task_classifier,
+)
 from src.evaluation.baseline import count_characters, count_words
 from src.utils.tokenizer import BaseTokenizer, get_tokenizer
 
@@ -63,6 +68,7 @@ class PromptAnalysisResult:
         has_output_format: Boolean indicating if an output format is explicitly requested.
         semantic_similarity: Mean pairwise cosine similarity across unique sentence pairs.
         redundancy_score: Proportion of unique sentence pairs exceeding redundancy threshold.
+        task_type: Primary task type classification of the user prompt.
     """
 
     token_count: int
@@ -75,6 +81,7 @@ class PromptAnalysisResult:
     has_output_format: bool
     semantic_similarity: float
     redundancy_score: float
+    task_type: str = "other"
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the result to a standard dictionary format."""
@@ -85,8 +92,8 @@ class PromptAnalyzer:
     """Reusable and modular prompt feature analyzer.
 
     Extracts basic measurable metrics, instructions, constraints, example requirements,
-    requested output formats, and semantic redundancy metrics from raw prompts without
-    performing any compression or external API calls.
+    requested output formats, semantic redundancy metrics, and task characteristics from
+    raw prompts without performing any compression or external API calls.
     """
 
     def __init__(
@@ -98,6 +105,7 @@ class PromptAnalyzer:
         example_detector: Optional[BaseExampleDetector] = None,
         output_format_detector: Optional[BaseOutputFormatDetector] = None,
         semantic_scorer: Optional[BaseSemanticScorer] = None,
+        task_classifier: Optional[BaseTaskClassifier] = None,
         redundancy_threshold: float = DEFAULT_REDUNDANCY_THRESHOLD,
     ):
         """Initialize the analyzer with pluggable components.
@@ -110,6 +118,7 @@ class PromptAnalyzer:
             example_detector: Detector instance for identifying example requirements. Defaults to RuleBasedExampleDetector.
             output_format_detector: Detector instance for identifying requested output formats. Defaults to RuleBasedOutputFormatDetector.
             semantic_scorer: Scorer instance for pairwise sentence similarity and redundancy. Defaults to SentenceTransformerSemanticScorer.
+            task_classifier: Classifier instance for identifying the primary task type. Defaults to RuleBasedTaskClassifier.
             redundancy_threshold: Cosine similarity threshold above which a sentence pair is considered redundant. Defaults to 0.80.
         """
         self.tokenizer = tokenizer if tokenizer is not None else get_tokenizer()
@@ -144,6 +153,11 @@ class PromptAnalyzer:
             if semantic_scorer is not None
             else get_semantic_scorer(redundancy_threshold=redundancy_threshold)
         )
+        self.task_classifier = (
+            task_classifier
+            if task_classifier is not None
+            else get_task_classifier()
+        )
 
     def analyze(self, prompt: str) -> Dict[str, Any]:
         """Analyze a prompt and extract measurable features.
@@ -154,7 +168,7 @@ class PromptAnalyzer:
         Returns:
             Dictionary containing token_count, word_count, sentence_count, prompt_length,
             instruction_count, constraint_count, has_examples_requirement, has_output_format,
-            semantic_similarity, and redundancy_score.
+            semantic_similarity, redundancy_score, and task_type.
         """
         result = self.analyze_structured(prompt)
         return result.to_dict()
@@ -201,6 +215,9 @@ class PromptAnalyzer:
             sentences, redundancy_threshold=self.redundancy_threshold
         )
 
+        # Primary task type classification uses pluggable deterministic rule-based classifier
+        task_type = self.task_classifier.classify(prompt)
+
         return PromptAnalysisResult(
             token_count=token_cnt,
             word_count=word_cnt,
@@ -212,6 +229,7 @@ class PromptAnalyzer:
             has_output_format=has_format,
             semantic_similarity=sem_sim,
             redundancy_score=red_score,
+            task_type=task_type,
         )
 
 
@@ -224,6 +242,7 @@ def analyze_prompt(
     example_detector: Optional[BaseExampleDetector] = None,
     output_format_detector: Optional[BaseOutputFormatDetector] = None,
     semantic_scorer: Optional[BaseSemanticScorer] = None,
+    task_classifier: Optional[BaseTaskClassifier] = None,
     redundancy_threshold: float = DEFAULT_REDUNDANCY_THRESHOLD,
 ) -> Dict[str, Any]:
     """Convenience function to analyze a prompt with default or custom components.
@@ -237,10 +256,11 @@ def analyze_prompt(
         example_detector: Optional custom example detector.
         output_format_detector: Optional custom output format detector.
         semantic_scorer: Optional custom semantic scorer.
+        task_classifier: Optional custom task classifier.
         redundancy_threshold: Optional redundancy threshold.
 
     Returns:
-        Dictionary with all extracted features including semantic_similarity and redundancy_score.
+        Dictionary with all extracted features including task_type.
     """
     analyzer = PromptAnalyzer(
         tokenizer=tokenizer,
@@ -250,6 +270,7 @@ def analyze_prompt(
         example_detector=example_detector,
         output_format_detector=output_format_detector,
         semantic_scorer=semantic_scorer,
+        task_classifier=task_classifier,
         redundancy_threshold=redundancy_threshold,
     )
     return analyzer.analyze(prompt)
