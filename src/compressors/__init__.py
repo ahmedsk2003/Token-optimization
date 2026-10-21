@@ -4,6 +4,20 @@ Exposes base compressor abstraction, exact duplicate compressor, similarity-base
 redundancy compressor, and utility functions.
 """
 
+from src.compressors.instruction import (
+    InstructionCompressionResult,
+    InstructionRule,
+    RuleBasedInstructionCompressor,
+    compress_instruction,
+    get_instruction_compressor,
+)
+from src.compressors.key_information import (
+    BaseKeyInformationExtractor,
+    KeyInformationExtractor,
+    KeyInformationResult,
+    extract_key_information,
+    get_key_information_extractor,
+)
 from src.compressors.redundancy import (
     BaseCompressor,
     DuplicateRemovalResult,
@@ -26,4 +40,15 @@ __all__ = [
     "SimilarityRemovalResult",
     "get_similarity_redundancy_compressor",
     "remove_similar_redundancy",
+    "InstructionRule",
+    "InstructionCompressionResult",
+    "RuleBasedInstructionCompressor",
+    "compress_instruction",
+    "get_instruction_compressor",
+    "BaseKeyInformationExtractor",
+    "KeyInformationExtractor",
+    "KeyInformationResult",
+    "extract_key_information",
+    "get_key_information_extractor",
 ]
+
