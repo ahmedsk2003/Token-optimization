@@ -1,0 +1,31 @@
+experiment_name,category,prompt_count,prompts_changed_count,prompts_changed_percentage,mean_tokens_before,mean_tokens_after,mean_tokens_saved,mean_reduction_percentage,median_reduction_percentage,mean_processing_time_ms,validation_failure_count,validation_warning_count,total_validation_warnings,must_preserve_all_preserved_count,must_preserve_all_preserved_percentage
+baseline,Exact and near-duplicate content,30,0,0.0,68.53,68.53,0.0,0.0,0.0,0.0,0,0,0,30,100.0
+baseline,Verbose instruction wording,30,0,0.0,37.23,37.23,0.0,0.0,0.0,0.0,0,0,0,30,100.0
+baseline,Explicit constraints and preservation-sensitive prompts,30,0,0.0,34.43,34.43,0.0,0.0,0.0,0.0,0,0,0,30,100.0
+baseline,Mixed prompts containing redundancy and verbose instructions,30,0,0.0,72.03,72.03,0.0,0.0,0.0,0.0,0,0,0,30,100.0
+baseline,Concise prompts that should not be compressed,30,0,0.0,8.93,8.93,0.0,0.0,0.0,0.0,0,0,0,30,100.0
+baseline,[OVERALL],150,0,0.0,44.23,44.23,0.0,0.0,0.0,0.0,0,0,0,150,100.0
+exact_duplicate_removal,Exact and near-duplicate content,30,14,46.67,68.53,55.93,12.6,18.66,0.0,0.04,3,0,0,30,100.0
+exact_duplicate_removal,Verbose instruction wording,30,0,0.0,37.23,37.23,0.0,0.0,0.0,0.02,0,0,0,30,100.0
+exact_duplicate_removal,Explicit constraints and preservation-sensitive prompts,30,0,0.0,34.43,34.43,0.0,0.0,0.0,0.02,0,0,0,30,100.0
+exact_duplicate_removal,Mixed prompts containing redundancy and verbose instructions,30,0,0.0,72.03,72.03,0.0,0.0,0.0,0.03,0,0,0,30,100.0
+exact_duplicate_removal,Concise prompts that should not be compressed,30,0,0.0,8.93,8.93,0.0,0.0,0.0,0.01,0,0,0,30,100.0
+exact_duplicate_removal,[OVERALL],150,14,9.33,44.23,41.71,2.52,3.73,0.0,0.02,3,0,0,150,100.0
+similarity_based_redundancy_removal,Exact and near-duplicate content,30,20,66.67,68.53,51.53,17.0,25.49,35.31,617.64,8,0,0,30,100.0
+similarity_based_redundancy_removal,Verbose instruction wording,30,0,0.0,37.23,37.23,0.0,0.0,0.0,0.02,0,0,0,30,100.0
+similarity_based_redundancy_removal,Explicit constraints and preservation-sensitive prompts,30,1,3.33,34.43,34.1,0.33,0.56,0.0,15.71,0,0,0,30,100.0
+similarity_based_redundancy_removal,Mixed prompts containing redundancy and verbose instructions,30,9,30.0,72.03,68.07,3.97,5.34,0.0,27.52,6,0,0,30,100.0
+similarity_based_redundancy_removal,Concise prompts that should not be compressed,30,0,0.0,8.93,8.93,0.0,0.0,0.0,0.01,0,0,0,30,100.0
+similarity_based_redundancy_removal,[OVERALL],150,30,20.0,44.23,39.97,4.26,6.28,0.0,132.18,14,0,0,150,100.0
+rule_based_instruction_compression,Exact and near-duplicate content,30,0,0.0,68.53,68.53,0.0,0.0,0.0,0.32,0,0,0,30,100.0
+rule_based_instruction_compression,Verbose instruction wording,30,0,0.0,37.23,37.23,0.0,0.0,0.0,0.17,0,0,0,30,100.0
+rule_based_instruction_compression,Explicit constraints and preservation-sensitive prompts,30,0,0.0,34.43,34.43,0.0,0.0,0.0,0.16,0,0,0,30,100.0
+rule_based_instruction_compression,Mixed prompts containing redundancy and verbose instructions,30,0,0.0,72.03,72.03,0.0,0.0,0.0,0.24,0,0,0,30,100.0
+rule_based_instruction_compression,Concise prompts that should not be compressed,30,0,0.0,8.93,8.93,0.0,0.0,0.0,0.03,0,0,0,30,100.0
+rule_based_instruction_compression,[OVERALL],150,0,0.0,44.23,44.23,0.0,0.0,0.0,0.18,0,0,0,150,100.0
+combined_technique,Exact and near-duplicate content,30,20,66.67,68.53,51.53,17.0,25.49,35.31,35.16,8,0,0,30,100.0
+combined_technique,Verbose instruction wording,30,0,0.0,37.23,37.23,0.0,0.0,0.0,0.2,0,0,0,30,100.0
+combined_technique,Explicit constraints and preservation-sensitive prompts,30,1,3.33,34.43,34.1,0.33,0.56,0.0,14.83,0,0,0,30,100.0
+combined_technique,Mixed prompts containing redundancy and verbose instructions,30,9,30.0,72.03,68.07,3.97,5.34,0.0,27.14,6,0,0,30,100.0
+combined_technique,Concise prompts that should not be compressed,30,0,0.0,8.93,8.93,0.0,0.0,0.0,0.04,0,0,0,30,100.0
+combined_technique,[OVERALL],150,30,20.0,44.23,39.97,4.26,6.28,0.0,15.47,14,0,0,150,100.0
